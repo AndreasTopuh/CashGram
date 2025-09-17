@@ -1,4 +1,5 @@
 import db from '../../../lib/database';
+import { mockExpenses, generateChartData as generateMockChartData, calculateStats as calculateMockStats } from '../../../lib/mockData';
 
 // Helper function to generate chart data from database results
 function generateChartData(expenses) {
@@ -41,9 +42,12 @@ function generateChartData(expenses) {
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
+      console.log('🔍 Starting expenses API request...');
+      
       const { user_id, category, startDate, endDate, limit } = req.query;
       
-      // Get expenses from database
+      // Try database first
+      console.log('🔍 Attempting to fetch from database...');
       const expenses = await db.getExpenses({
         user_id,
         category,
@@ -52,8 +56,11 @@ export default async function handler(req, res) {
         limit: limit ? parseInt(limit) : 50
       });
 
+      console.log('✅ Database fetch successful, expenses count:', expenses.length);
+
       // Get statistics
       const stats = await db.getStats(user_id);
+      console.log('✅ Stats fetch successful:', stats);
       
       // Generate chart data
       const chartData = generateChartData(expenses);
@@ -63,6 +70,8 @@ export default async function handler(req, res) {
       const transactions = parseInt(stats.total_transactions || 0);
       const avgDaily = total > 0 && transactions > 0 ? total / Math.max(1, transactions) : 0;
       const categories = parseInt(stats.unique_categories || 0);
+
+      console.log('✅ Sending successful response with real data');
 
       res.status(200).json({
         expenses: expenses.map(expense => ({
@@ -79,14 +88,34 @@ export default async function handler(req, res) {
           monthlyChange: 0, // TODO: Implement monthly comparison
           trend: 'up'
         },
-        success: true
+        success: true,
+        source: 'database'
       });
     } catch (error) {
-      console.error('Database error:', error);
-      res.status(500).json({ 
-        error: 'Failed to fetch expenses: ' + error.message,
-        success: false 
-      });
+      console.error('❌ Database error, falling back to mock data:', error.message);
+      
+      // Fallback to mock data
+      try {
+        const chartData = generateMockChartData(mockExpenses);
+        const stats = calculateMockStats(mockExpenses);
+        
+        console.log('✅ Sending fallback mock data');
+
+        res.status(200).json({
+          expenses: mockExpenses,
+          chartData,
+          stats,
+          success: true,
+          source: 'mock',
+          error: error.message
+        });
+      } catch (mockError) {
+        console.error('❌ Mock data fallback failed:', mockError);
+        res.status(500).json({ 
+          error: 'Both database and mock data failed: ' + error.message,
+          success: false 
+        });
+      }
     }
   } else if (req.method === 'POST') {
     try {
