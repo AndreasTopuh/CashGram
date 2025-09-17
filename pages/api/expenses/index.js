@@ -1,4 +1,4 @@
-import db from '../../../lib/database';
+import db from '../../../lib/supabase';
 import { mockExpenses, generateChartData as generateMockChartData, calculateStats as calculateMockStats } from '../../../lib/mockData';
 
 // Helper function to generate chart data from database results

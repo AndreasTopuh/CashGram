@@ -1,32 +1,57 @@
-import db from '../../../lib/database';
+import { supabase } from '../../../lib/supabase';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      // Test database connection
-      const result = await db.query('SELECT NOW() as current_time, version() as postgres_version');
+      console.log('🔍 Testing Supabase connection...');
       
-      // Get basic stats
-      const expenseCount = await db.query('SELECT COUNT(*) as count FROM expenses');
-      const userCount = await db.query('SELECT COUNT(*) as count FROM users');
-      const categoryCount = await db.query('SELECT COUNT(*) as count FROM categories');
+      // Test connection with a simple query
+      const { data: testData, error: testError } = await supabase
+        .from('categories')
+        .select('count(*)')
+        .single();
+
+      if (testError) {
+        throw testError;
+      }
+
+      // Get table counts
+      const { data: expenses, error: expensesError } = await supabase
+        .from('expenses')
+        .select('id', { count: 'exact' });
+
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id', { count: 'exact' });
+
+      const { data: categories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('id', { count: 'exact' });
+
+      console.log('✅ Supabase connection successful');
 
       res.status(200).json({
         success: true,
-        message: 'Database connection successful',
+        message: 'Supabase connection successful',
         database_info: {
-          current_time: result.rows[0].current_time,
-          postgres_version: result.rows[0].postgres_version,
-          expenses_count: parseInt(expenseCount.rows[0].count),
-          users_count: parseInt(userCount.rows[0].count),
-          categories_count: parseInt(categoryCount.rows[0].count)
+          current_time: new Date().toISOString(),
+          connection_type: 'supabase_client',
+          expenses_count: expenses?.length || 0,
+          users_count: users?.length || 0,
+          categories_count: categories?.length || 0,
+          errors: {
+            expenses: expensesError?.message || null,
+            users: usersError?.message || null,
+            categories: categoriesError?.message || null
+          }
         }
       });
     } catch (error) {
-      console.error('Database connection error:', error);
+      console.error('❌ Supabase connection error:', error);
       res.status(500).json({
         success: false,
-        error: 'Database connection failed: ' + error.message
+        error: 'Supabase connection failed: ' + error.message,
+        details: error
       });
     }
   } else {
