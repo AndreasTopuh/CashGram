@@ -43,10 +43,12 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       console.log('🔍 Starting expenses API request...');
+      console.log('🔍 Environment:', process.env.NODE_ENV);
+      console.log('🔍 Database URL exists:', !!process.env.DATABASE_URL);
       
       const { user_id, category, startDate, endDate, limit } = req.query;
       
-      // Try database first
+      // Try database connection
       console.log('🔍 Attempting to fetch from database...');
       const expenses = await db.getExpenses({
         user_id,
@@ -85,37 +87,22 @@ export default async function handler(req, res) {
           transactions,
           avgDaily,
           categories,
-          monthlyChange: 0, // TODO: Implement monthly comparison
+          monthlyChange: 0,
           trend: 'up'
         },
         success: true,
         source: 'database'
       });
     } catch (error) {
-      console.error('❌ Database error, falling back to mock data:', error.message);
+      console.error('❌ Database error:', error.message);
+      console.error('❌ Stack trace:', error.stack);
       
-      // Fallback to mock data
-      try {
-        const chartData = generateMockChartData(mockExpenses);
-        const stats = calculateMockStats(mockExpenses);
-        
-        console.log('✅ Sending fallback mock data');
-
-        res.status(200).json({
-          expenses: mockExpenses,
-          chartData,
-          stats,
-          success: true,
-          source: 'mock',
-          error: error.message
-        });
-      } catch (mockError) {
-        console.error('❌ Mock data fallback failed:', mockError);
-        res.status(500).json({ 
-          error: 'Both database and mock data failed: ' + error.message,
-          success: false 
-        });
-      }
+      // Return error instead of fallback
+      res.status(500).json({ 
+        error: 'Database connection failed: ' + error.message,
+        success: false,
+        source: 'database_error'
+      });
     }
   } else if (req.method === 'POST') {
     try {
