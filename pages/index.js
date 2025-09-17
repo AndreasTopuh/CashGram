@@ -183,26 +183,7 @@ export default function Dashboard() {
         {/* Recent Expenses */}
         <ExpenseList expenses={data?.expenses?.slice(0, 10) || []} />
 
-        {/* Quick Stats */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg text-white p-8">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold mb-2">🚀 Mulai Track Pengeluaran</h3>
-            <p className="text-blue-100 mb-6">
-              Kirim pesan ke Telegram Bot untuk mencatat pengeluaran otomatis
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
-                <p className="text-sm opacity-90">Contoh pesan:</p>
-                <p className="font-mono text-lg">"Makan siang Rp 50.000"</p>
-              </div>
-              <div className="text-2xl">→</div>
-              <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
-                <p className="text-sm opacity-90">Otomatis tersimpan!</p>
-                <p className="font-mono text-lg">✅ Data masuk dashboard</p>
-              </div>
-            </div>
-          </div>
-        </div>
+
       </div>
     </Layout>
   );
